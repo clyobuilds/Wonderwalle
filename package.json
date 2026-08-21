@@ -1,0 +1,13 @@
+{
+  "name": "wonderwalle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A 4x4 grid of browser text-to-speech pads. Dev tooling only; the shipped app has no dependencies.",
+  "license": "MIT",
+  "scripts": {
+    "qa": "node qa/check.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}
