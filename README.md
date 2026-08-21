@@ -1,7 +1,7 @@
 # Wonderwalle
 
-A 4x4 grid of sixteen pads in the browser. Type a phrase into a pad, click it, and your
-browser speaks it aloud. The sixteenth pad stops everything.
+A 4x4 grid of sixteen pads in the browser. Click a pad and your browser speaks its phrase
+aloud. The sixteenth pad stops everything.
 
 There are no audio files in this project. Every sound is synthesized on the fly by
 `window.speechSynthesis`, the speech engine already built into your browser. Nothing is
@@ -11,17 +11,16 @@ Wonderwall plus Wall-E, hence the extra E.
 
 ## Using it
 
-- **Pads 1 to 15** each hold one phrase. The whole pad is the speak trigger, like a
-  physical pad controller: click anywhere on it to hear its phrase, including directly on
-  the displayed text. Clicking a pad that is already speaking restarts it from the
-  beginning. Empty pads are drawn with a dashed outline and do nothing when clicked.
-- To change a pad's phrase, click its small **Edit** button. That focuses the pad's text
-  field so you can type; clicking away, or tabbing off, leaves edit mode and returns the
-  pad to a plain speak trigger.
+- **Pads 1 to 15** each display one phrase and are the speak trigger, like a physical pad
+  controller: click anywhere on a pad to hear its phrase. Clicking a pad that is already
+  speaking restarts it from the beginning. Empty pads are drawn with a dashed outline and
+  do nothing when clicked.
 - **Pad 16, Stop All**, cancels any speech in progress.
-- **Load all** takes a whole set at once. Paste one phrase per line into the box and press
-  Load all. Lines fill pads 1 to 15 by position; a blank line in the middle clears that
-  pad; anything past line 15 is dropped with a note. It overwrites, so it asks first.
+- **Load all is the only way to change a pad's phrase.** Paste one phrase per line into the
+  box and press Load all. Lines fill pads 1 to 15 by position; a blank line in the middle
+  clears that pad; anything past line 15 is dropped with a note. It overwrites, so it asks
+  first. To edit a single pad, use Copy all to pull the current set into the box, change
+  the line you want, and Load all again.
 - **Copy all** copies your set as one phrase per line, ready to paste straight back into
   Load all or send to someone else.
 - **Clear all** empties every pad, after a confirm step.
@@ -69,7 +68,7 @@ again when the browser's `voiceschanged` event fires, and again at the moment yo
 pad.
 
 Speech synthesis needs a browser that supports the Web Speech API. Without it, the pads
-still save and edit, but they will not speak.
+still load and save, but they will not speak.
 
 ## Files
 
@@ -104,10 +103,12 @@ npm run qa
 
 The script serves the folder over `http://127.0.0.1`, drives it in headless Chromium, and
 checks pad rendering, the theme toggle, persistence across reload, the keyboard guard
-against typing in text fields, whole-pad click-to-speak versus the Edit button's separate
-edit mode, the empty-voice-list fallback, bulk load ordering and line-ending handling,
-comma safety, the Copy all round trip, and the disabled-button states. It writes a
-screenshot to `qa/preview.png`.
+against typing in the Load all box, whole-pad click-to-speak, the empty-voice-list
+fallback, bulk load ordering and line-ending handling, comma safety, the Copy all round
+trip, and the disabled-button states. It also documents one known limitation: a genuinely
+blank pad 1 can't round-trip through Copy all / Load all, since the parser can't tell a
+real blank first line from an incidental one and always trims it. It writes a screenshot to
+`qa/preview.png`.
 
 ## License
 

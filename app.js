@@ -91,7 +91,7 @@
   /* ---------------- speaking ---------------- */
 
   function padEl(n) { return grid.querySelector('.pad[data-pad="' + n + '"]'); }
-  function padInput(n) { return grid.querySelector('[data-pad-input="' + n + '"]'); }
+  function padText(n) { return grid.querySelector('[data-pad-text="' + n + '"]'); }
 
   function setPlaying(n) {
     if (playingPad) {
@@ -159,10 +159,15 @@
   }
 
   function renderPad(n) {
-    var input = padInput(n);
+    var text = padText(n);
     var el = padEl(n);
-    if (input && input.value !== phrases[n - 1]) input.value = phrases[n - 1];
-    if (el) el.classList.toggle('is-empty', !(phrases[n - 1] || '').trim());
+    var phrase = phrases[n - 1] || '';
+    var isEmpty = !phrase.trim();
+    if (text) {
+      text.textContent = isEmpty ? 'Empty' : phrase;
+      text.setAttribute('data-phrase', phrase);
+    }
+    if (el) el.classList.toggle('is-empty', isEmpty);
   }
 
   function renderAll() {
@@ -324,59 +329,20 @@
   });
 
   /* ---------------- pad interaction ----------------
-     The whole pad is the speak trigger, like a physical pad controller. The
-     text field is normally click-through (see .pad-input { pointer-events:
-     none } in styles.css) so a click anywhere on the pad face reaches the pad
-     itself. The small Edit button is the only way in to typing: it turns
-     pointer-events back on for that pad's field and focuses it. */
-
-  function enterEdit(n) {
-    var pad = padEl(n);
-    if (pad) pad.classList.add('is-editing');
-    var input = padInput(n);
-    if (input) input.focus();
-  }
+     The whole pad is the speak trigger, like a physical pad controller.
+     Pads only display phrases; Load all is the only way to change one. */
 
   grid.addEventListener('click', function (event) {
     if (event.target.closest('#stop-all')) {
       stopAll();
       return;
     }
-    var editBtn = event.target.closest('.pad-edit');
-    if (editBtn) {
-      var editN = Number(editBtn.getAttribute('data-edit'));
-      if (editN) enterEdit(editN);
-      return;
-    }
     var pad = event.target.closest('.pad');
     if (!pad) return;
-    /* Reachable only while a pad is mid-edit, since the field is otherwise
-       click-through. */
-    if (event.target.closest('.pad-input')) return;
 
     var n = Number(pad.getAttribute('data-pad'));
     if (!n || n > PAD_COUNT) return;
     speakPad(n);
-  });
-
-  grid.addEventListener('input', function (event) {
-    var input = event.target.closest('.pad-input');
-    if (!input) return;
-    var n = Number(input.getAttribute('data-pad-input'));
-    if (!n || n > PAD_COUNT) return;
-    phrases[n - 1] = input.value;
-    save();
-    renderPad(n);
-    syncControls();
-  });
-
-  /* focusout bubbles (blur does not), so this single listener catches every
-     pad's field losing focus and exits edit mode for it. */
-  grid.addEventListener('focusout', function (event) {
-    var input = event.target.closest && event.target.closest('.pad-input');
-    if (!input) return;
-    var pad = input.closest('.pad');
-    if (pad) pad.classList.remove('is-editing');
   });
 
   bulk.addEventListener('input', function () {

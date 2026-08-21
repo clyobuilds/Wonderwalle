@@ -199,30 +199,19 @@ h1 {
   background: var(--playing-soft);
 }
 
-.pad-input {
+.pad-text {
   flex: 1 1 auto;
   min-height: 0;
-  width: 100%;
   margin: 0;
   padding: 2px;
-  resize: none;
   overflow: auto;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
   color: var(--fg);
   font: inherit;
   font-size: 0.875rem;
   line-height: 1.3;
-  cursor: text;
-  /* Off by default so a click anywhere on the pad reaches the pad itself and
-     speaks; the Edit button turns this on to allow typing. */
-  pointer-events: none;
 }
 
-.pad.is-editing .pad-input { pointer-events: auto; }
-
-.pad-input::placeholder { color: var(--muted); }
+.pad.is-empty .pad-text { color: var(--muted); }
 
 .pad-foot {
   flex: 0 0 auto;
@@ -241,17 +230,6 @@ h1 {
   padding: 0 5px;
   line-height: 1.5;
   background: var(--bg);
-}
-
-.pad-edit {
-  font: inherit;
-  font-size: 0.6875rem;
-  padding: 2px 8px;
-  color: var(--fg);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  cursor: pointer;
 }
 
 /* Stop All pad */

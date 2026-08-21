@@ -150,7 +150,7 @@ function assertEqual(actual, expected, message) {
 
 /* ---------------- page helpers ---------------- */
 
-const padValue = (page, n) => page.inputValue(`#pad-${n}`);
+const padValue = (page, n) => page.getAttribute(`#pad-${n}`, 'data-phrase');
 
 async function allPadValues(page) {
   const out = [];
@@ -158,13 +158,29 @@ async function allPadValues(page) {
   return out;
 }
 
-/* The field is click-through until the pad's Edit button turns it on
-   (mirrors real usage: enter edit mode, then type), then blur to leave
-   edit mode the same way a user tabbing or clicking away would. */
+/* Pads have no editing UI of their own; Load all is the app's only path for
+   changing one, and its parser deliberately trims one incidental leading or
+   trailing blank line from a paste. That makes it impossible to represent
+   "pad 1 is blank, later pads are not" through a paste, since a genuinely
+   blank first line is indistinguishable from an accidental one and always
+   gets trimmed. This helper is test setup, not a UI exercise, so it seeds
+   localStorage directly (the same format app.js reads on load) and reloads,
+   sidestepping that ambiguity entirely. The real paste/parse behavior is
+   covered by the dedicated bulk-load tests below. */
 async function setPad(page, n, text) {
-  await page.click(`[data-edit="${n}"]`);
-  await page.fill(`#pad-${n}`, text);
-  await page.locator(`#pad-${n}`).evaluate((el) => el.blur());
+  await page.evaluate(({ n, text, key }) => {
+    let phrases;
+    try {
+      phrases = JSON.parse(window.localStorage.getItem(key) || 'null');
+    } catch (err) {
+      phrases = null;
+    }
+    if (!Array.isArray(phrases)) phrases = new Array(15).fill('');
+    phrases[n - 1] = text;
+    window.localStorage.setItem(key, JSON.stringify(phrases));
+  }, { n, text, key: 'wonderwalle.phrases.v1' });
+  await page.reload();
+  await page.waitForSelector('.pad');
 }
 
 async function bulkLoad(page, text) {
@@ -225,13 +241,6 @@ async function main() {
     assertEqual(await padValue(page, 3), 'Coffee is ready', 'pad 3 restored after reload');
   });
 
-  await test('a mapped key does not speak while a pad text field is focused', async (page) => {
-    await setPad(page, 5, 'Back in a moment');
-    await page.focus('#pad-1');
-    await page.keyboard.press('q');
-    assertEqual(await spoken(page), [], 'no speech while a pad field is focused');
-  });
-
   await test('a mapped key does not speak while the Load all textarea is focused', async (page) => {
     await setPad(page, 5, 'Back in a moment');
     await page.focus('#bulk');
@@ -255,16 +264,9 @@ async function main() {
     assertEqual(await page.locator('.pad.is-playing').count(), 0, 'playing state cleared');
   });
 
-  await test('the Edit button enters edit mode instead of speaking, and typing does not speak', async (page) => {
-    await page.click('[data-edit="1"]');
-    assert(await page.locator('.pad[data-pad="1"]').evaluate((el) => el.classList.contains('is-editing')),
-      'pad enters is-editing on Edit click');
-    assertEqual(await spoken(page), [], 'clicking Edit does not speak');
-    await page.fill('#pad-1', 'Good morning');
-    assertEqual(await spoken(page), [], 'typing into the field does not speak');
-    await page.locator('#pad-1').evaluate((el) => el.blur());
-    assert(!(await page.locator('.pad[data-pad="1"]').evaluate((el) => el.classList.contains('is-editing'))),
-      'blurring the field exits edit mode');
+  await test('pads have no editing controls; Load all is the only way to change one', async (page) => {
+    assertEqual(await page.locator('.pad-edit').count(), 0, 'no Edit buttons anywhere');
+    assertEqual(await page.locator('#grid textarea').count(), 0, 'no editable fields inside pads');
   });
 
   await test('an empty pad is inert and marked as empty', async (page) => {
@@ -319,6 +321,16 @@ async function main() {
     await bulkLoad(page, 'Good morning\n\nAlmost done');
     assertEqual(await padValue(page, 2), '', 'pad 2 cleared by the blank line');
     assertEqual(await padValue(page, 3), 'Almost done', 'pad 3 keeps its position');
+  });
+
+  /* Known, spec-mandated limitation, not a regression: the single-blank-line
+     trim can't tell a genuinely blank pad 1 from an accidental leading blank,
+     so it always trims it, shifting everything up by one. Documented here so
+     it stays visible and isn't reintroduced-as-fixed by accident. */
+  await test('KNOWN LIMITATION: a leading blank pad does not round-trip through Copy all / Load all', async (page) => {
+    await bulkLoad(page, '\nOn my way\nAlmost done');
+    assertEqual(await padValue(page, 1), 'On my way', 'the leading blank is trimmed, not preserved as pad 1');
+    assertEqual(await padValue(page, 2), 'Almost done', 'every later phrase shifts up by one position');
   });
 
   /* A textarea normalizes CRLF to LF in its value, so the app's own normalization
